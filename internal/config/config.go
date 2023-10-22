@@ -18,11 +18,11 @@ type database struct {
 	Address  string
 	Username string
 	Password string
-	// NetworkType string
 }
 
 type server struct {
 	Debug bool
+	Port  int
 }
 
 type admin struct {
@@ -53,12 +53,17 @@ func init() {
 	v.BindEnv("database.address", "DATABASE_ADDRESS")
 	v.BindEnv("database.username", "DATABASE_USERNAME")
 	v.BindEnv("database.password", "DATABASE_PASSWORD")
+	v.BindEnv("server.debug", "SERVER_DEBUG")
+	v.BindEnv("server.port", "SERVER_PORT")
+	v.BindEnv("admin.username", "ADMIN_USERNAME")
+	v.BindEnv("admin.password", "ADMIN_PASSWORD")
 
 	// Configure default values
 	v.SetDefault("database.name", "remotefalcon")
-	// v.SetDefault("database.networkType", "tcp")
-
 	v.SetDefault("server.debug", false)
+	v.SetDefault("server.port", 8080)
+	v.SetDefault("admin.username", "admin")
+	v.SetDefault("admin.password", "password")
 
 	v.ReadInConfig()
 	v.WatchConfig()

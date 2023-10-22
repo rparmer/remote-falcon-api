@@ -1,15 +1,24 @@
-package auth
+package middleware
 
 import (
+	"encoding/base64"
 	"net/http"
 	"strings"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/rparmer/remote-falcon-api/internal/database"
+	"github.com/rparmer/remote-falcon-api/internal/service/auth"
 	"golang.org/x/crypto/bcrypt"
 )
 
 const userkey = "user"
+
+var authService *auth.Service
+
+func Configure(db *database.MongoDB) {
+	authService = auth.New(db)
+}
 
 func AuthRequired(c *gin.Context) {
 	session := sessions.Default(c)
@@ -23,6 +32,14 @@ func AuthRequired(c *gin.Context) {
 	c.Next()
 }
 
+func PluginAuthRequired(c *gin.Context) {
+	if checkBasicAuth(c) || checkTokenAuth(c) {
+		c.Next()
+		return
+	}
+	c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+}
+
 func Login(c *gin.Context) {
 	session := sessions.Default(c)
 	username := c.PostForm("username")
@@ -34,7 +51,7 @@ func Login(c *gin.Context) {
 	}
 
 	// Check for username and password match, usually from a database
-	if username != "hello" || password != "itsme" {
+	if username != "admin" || password != "password" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication failed"})
 		return
 	}
@@ -63,6 +80,38 @@ func Logout(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully logged out"})
 }
 
-func VerifyPassword(password, hashedPassword string) error {
-	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+func checkBasicAuth(c *gin.Context) bool {
+	authHeader := c.GetHeader("Authorization")
+	splitCreds := strings.Split(authHeader, "Basic ")
+	if len(splitCreds) != 2 {
+		return false
+	}
+	creds := splitCreds[1]
+	rawCreds, _ := base64.StdEncoding.DecodeString(creds)
+	splitRawCreds := strings.Split(string(rawCreds), ":")
+	if len(splitRawCreds) != 2 {
+		return false
+	}
+	username := splitRawCreds[0]
+	password := splitRawCreds[1]
+	auth, _ := authService.GetAuth()
+	return username == auth.Username && verifyPassword(password, auth.Password)
+}
+
+func checkTokenAuth(c *gin.Context) bool {
+	authHeader := c.GetHeader("Authorization")
+	splitToken := strings.Split(authHeader, "Bearer ")
+	if len(splitToken) != 2 {
+		return false
+	}
+	token := splitToken[1]
+	auth, _ := authService.GetAuth()
+	return token == auth.PluginToken
+}
+
+func verifyPassword(password, hashedPassword string) bool {
+	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password)); err != nil {
+		return false
+	}
+	return true
 }

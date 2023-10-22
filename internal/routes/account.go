@@ -1,8 +1,11 @@
-package route
+package routes
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/rparmer/remote-falcon-api/internal/service"
+)
 
-func accountRoutes(superRoute *gin.RouterGroup) {
+func accountRoutes(superRoute *gin.RouterGroup, svc *service.Service) {
 	accountRouter := superRoute.Group("/account")
 	{
 		// accountRouter.JSON

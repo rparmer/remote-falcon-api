@@ -3,9 +3,11 @@ package viewer
 import "go.mongodb.org/mongo-driver/bson/primitive"
 
 type ViewerPage struct {
-	Id   *primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	Name string              `json:"name" bson:"name"`
-	Html string              `json:"html" bson:"html"`
+	Id       *primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	Name     string              `json:"name" bson:"name"`
+	Html     string              `json:"html" bson:"html"`
+	Title    string              `json:"title" bson:"title"`
+	IconLink string              `json:"iconLink" bson:"iconLink"`
 }
 
 // type RemoteViewerPage struct {
